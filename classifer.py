@@ -64,7 +64,7 @@ def get_routes_from_file(file_name):
             hueco_grade = FONT_TO_HUECO[item['Grade']]
             routes[hueco_grade].append(item['Moves'])
 
-    routes = {grade:probs for grade, probs in routes.items() if len(probs) > 100}
+    routes = {grade:probs for grade, probs in routes.items() if len(probs)}
 
     print(list(f"{grade}:{len(probs)}" for grade,probs in routes.items()))
     
@@ -86,6 +86,7 @@ def get_datasets(file_name):
     vocabs = {}
 
     routes = get_routes_from_file(file_name)
+    routes = {grade:moves for grade,moves in routes.items() if len(moves) > 100}
 
     for grade in routes.keys():
         train_routes, test_routes= train_test_split(routes[grade])
@@ -188,15 +189,24 @@ def main():
 
 
     # TESTING ON THE TEST FILE (-t)
-    
-    # if testfile != None:
-    #     test_sentences = get_sentences_from_file(testfile)
-    #     for sentence in test_sentences: 
-    #         sentence_str = " ".join(sentence)
-    #         ngrams = list(nltk.ngrams(sentence, MAX_GRAM))
-    #         predictions = [(name, model.perplexity(ngrams)) for name, model in models.items()]
-    #         author_pred, perplexity = min(predictions, key = lambda x: x[1])
-    #         print(f"<{sentence_str}>\n was written by {author_pred} with perplexity {perplexity}")
+    test_file = None
+
+    if "-test" in sys.argv:
+        test_file_index = sys.argv.index("-test") + 1
+        if len(sys.argv) <= test_file_index:
+            print("Enter a test file")
+            return
+        test_file = sys.argv[test_file_index]
+       
+    if test_file != None:
+        routes = get_routes_from_file(test_file)
+        for grade in routes.keys(): 
+            for moves in routes[grade]:    
+                ngrams = list(nltk.ngrams(moves, MAX_GRAM))
+                predictions = [(name, model.perplexity(ngrams)) for name, model in models.items()]
+                grade_pred, perplexity = min(predictions, key = lambda x: x[1])
+                print(f"<{moves}>\n PREDICTED GRADE {grade_pred} with perplexity {perplexity} | TRUE GRADE {grade}")
+                visualize_route(moves, f" PRED {grade_pred} TRUE {grade} ")
 
     # GENERATING TEXT (-g)
 
